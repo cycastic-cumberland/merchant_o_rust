@@ -16,7 +16,7 @@ Ensure your configuration file (`config.json`) follows this structure:
 {
   "log_level": "DEBUG",
   "map": {
-    "/path": "http://pathto.com/remap"
+    "/path": ["http://pathto.com/remap"]
   }
 }
 ```
@@ -50,8 +50,8 @@ Here's an example configuration file:
 {
   "log_level": "DEBUG",
   "map": {
-    "/api/v1": "http://192.168.0.112:8080/api/v1",
-    "/api/v2": "http://192.168.0.113:8080/api/v2"
+    "/api/v1": ["http://192.168.0.112:8080/api/v1", "http://192.168.0.112:8081/api/v1"],
+    "/api/v2": ["http://192.168.0.113:8080/api/v2"]
   }
 }
 ```

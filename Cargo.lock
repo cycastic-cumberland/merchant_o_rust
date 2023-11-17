@@ -324,7 +324,7 @@ checksum = "f665ee40bc4a3c5590afb1e9677db74a508659dfd71e126420da8274909a0167"
 
 [[package]]
 name = "merchant_o_rust"
-version = "1.0.1"
+version = "1.1.1"
 dependencies = [
  "derive_more",
  "env_logger",
