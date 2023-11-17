@@ -1,12 +1,11 @@
-use log::{log, Level};
 use crate::config::{app_config::ApplicationConfig, redirection_reader::RedirectionReader};
+use log::{log, Level};
 use tokio::{fs, io};
-use std::convert::Infallible;
-use std::net::SocketAddr;
-use std::sync::{Arc};
-use hyper::{Body, Client, Request, Response, Server, Uri};
-use hyper::service::{make_service_fn, service_fn};
+use std::{convert::Infallible, net::SocketAddr, sync::Arc};
+use hyper::{service::{make_service_fn, service_fn}, Body, Client, Request, Response, Server, Uri};
 use tokio::sync::RwLock;
+use std::time::{SystemTime};
+
 mod config;
 
 // const PUBLICIZED_HOST: &'static str = "0.0.0.0";
@@ -19,13 +18,14 @@ async fn shutdown_signal() {
 }
 
 async fn handle_request(req: Request<Body>, target: Arc<RedirectionReader>) -> Result<Response<Body>, Infallible> {
+    let epoch = SystemTime::now();
     let uri = req.uri().to_string();
     if let Some(target_url) = target.match_uri(&uri).await{
-        log!(Level::Info, "Remapping: {}: {} -> {}", req.method().to_string(), uri, &target_url);
         let target_uri: Uri = target_url.parse().unwrap();
+        let method = req.method().clone();
         let mut builder = Request::builder()
             .uri(target_uri)
-            .method(req.method())
+            .method(&method)
             .version(req.version());
         if let Some(headers) = builder.headers_mut(){
             *headers = req.headers().clone();
@@ -51,6 +51,13 @@ async fn handle_request(req: Request<Body>, target: Arc<RedirectionReader>) -> R
                 }
             }
         };
+        let resolved = SystemTime::now();
+        log!(Level::Info, "Remapped \"{}({}) {} -> {}\" in {} us",
+            method.to_string(),
+            res.status().as_str(),
+            uri,
+            &target_url,
+            resolved.duration_since(epoch).unwrap().as_micros());
 
         // Return the response from the target server
         return Ok(res);
@@ -82,8 +89,8 @@ async fn main() -> io::Result<()> {
         Ok(cfg) => cfg,
         Err(e) => panic!("Failed to deserialize application configuration with exception: {}", e.to_string())
     };
-    let port = config.api_port;
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    const PORT: u16 = 8188;
+    let addr = SocketAddr::from(([0, 0, 0, 0], PORT));
     std::env::set_var("RUST_LOG", config.log_level);
     std::env::set_var("RUST_BACKTRACE", "1");
     env_logger::init();
